@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Applicants List</title>
+    <script>
+        // Предполагается, что данные были переданы как строка JSON
+        const applicants = <%- applicantsData %>;
+        window.onload = function() {
+            const listContainer = document.getElementById('applicants-list');
+            applicants.forEach(applicant => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Salary: ${applicant.salary}, Number Skills: ${applicant.numberSkills},Skills: ${applicant.skills.join(', ')}`;
+                listContainer.appendChild(listItem);
+            });
+        };
+    </script> 
+</head>
+<body>
+    <ul id="applicants-list"></ul>
+</body>
+</html>
