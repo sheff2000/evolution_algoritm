@@ -1,5 +1,4 @@
 // пернтендент
-import calculateFitness from "./fitnessFunction.js";  // подсчет фитнеса
 
 export class Applicant {
     constructor(salary, numberSkills, skills) {
@@ -8,7 +7,7 @@ export class Applicant {
       this.numberSkills = numberSkills; // количество навыков
     }
   
-    // Метод для подсчета фитнеса
+    // Метод для подсчета фитнеса ---- тут он не нужен
     fitness(requiredSkills) {
       // Логика подсчета фитнеса
       //const fitness = calculateFitness(this.)

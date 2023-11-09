@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Upload File</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -18,34 +19,176 @@
                 </div>
                 <div class="">
                     <label for="tMax" class="form-label">Кількість поколінь</label>
-                    <input class="form-control form-control-sm" type="text" id="tMax" name="tMax">
+                    <input class="form-control form-control-sm" type="text" id="tMax" name="tMax" value="100">
+                </div>
+                <div class="">
+                    <label for="tMax" class="form-label">Кількість батьків (агентів)</label>
+                    <input class="form-control form-control-sm" type="text" id="mu" name="mu" value="2">
+                </div>
+                <div class="">
+                    <label for="tMax" class="form-label">Кількість нащадків</label>
+                    <input class="form-control form-control-sm" type="text" id="lam" name="lam" value="2">
+                </div>
+                <div class="">
+                    <label for="tMax" class="form-label">Mut_level_0</label>
+                    <input class="form-control form-control-sm" type="text" id="mut_level_0" name="mut_level_0" value="5">
+                </div>
+                <div class="">
+                    <label for="tMax" class="form-label">P_cross</label>
+                    <input class="form-control form-control-sm" type="text" id="P_cross" name="P_cross" value="0.5">
+                </div>
+                <div class="">
+                    <label for="tMax" class="form-label">Штраф</label>
+                    <input class="form-control form-control-sm" type="text" id="shtraf" name="shtraf" value="3">
                 </div>
                 <br><br>
                 <button type="submit" class="btn btn-primary mb-3" value="Upload" id="sendData">Send data</button>
+                <button type="submit" class="btn btn-success mb-3" id="startAlgoritm" disabled> Start </button>
                 <hr>
                   
             </div>
             <div class="col-sm-9 col-md-9">
-                <div id="result"></div>
+                <canvas id="myChart" width="400" height="400"></canvas>
+                <div id="result">
+
+                </div>
             </div>
         </div>
     </div>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="datafile">
-        <input type="submit" value="Upload">
-    </form>
+    <div id="result22"></div>
+   
 
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
+            // стартуем наш алгоритм
+            document.getElementById('startAlgoritm').addEventListener('click', function(){
+
+                console.log('Start algoritm BTN CLICK');
+                const content = document.getElementById('result');
+                document.getElementById('myChart').innerHTML = '';
+                content.innerHTML= 'load...';
+
+            
+
+                fetch('/start-algoritm', {
+                    method:'GET'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json(); // или response.text() если ожидается не JSON
+                    }
+                    throw new Error('Network response was not ok.');
+                })
+                .then(data => {
+                    console.log('Start algoritm reciev answer - ok');
+                    const agents = data.agents;
+                    const bestValues = data.best; 
+                    const indexes = bestValues.map((_, index) => index); // Создаем массив индексов
+                    
+                    if (window.myChart instanceof Chart) {
+                        window.myChart.destroy();
+                    }
+
+                    const ctx = document.getElementById('myChart').getContext('2d');
+                    window.myChart = new Chart(ctx, {
+                        type: 'line', // Тип графика - линейный
+                        data: {
+                            labels: indexes, // Ось X будет показывать индексы
+                            datasets: [{
+                                label: 'Fitness Value',
+                                data: bestValues, // Ось Y будет показывать значения fitness
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+
+                    console.log('agents - ', agents);
+                    content.innerHTML = data.lastVector;
+
+
+                    // Создаем элемент таблицы
+                    const table = document.createElement('table');
+                    table.classList.add('table'); // Добавляем классы Bootstrap, если используете
+
+                    // Создаем заголовки для таблицы, если нужно
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+
+                    const th = document.createElement('th');
+                    th.textContent = `Applicant`;
+                    headerRow.appendChild(th);
+                    for (let i = 0; i < data.numberSkills; i++) {
+                        const th = document.createElement('th');
+                        th.textContent = `Skill ${i + 1}`; // Название навыков
+                        headerRow.appendChild(th);
+                    }
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    // Создаем тело таблицы
+                    const tbody = document.createElement('tbody');
+
+                    // Генерируем строки таблицы на основе matrixSkills
+                    data.lastVector.forEach((applicant, index)=>{
+                        if (applicant == 1) {
+                            const tr = document.createElement('tr');
+                            const td = document.createElement('td');
+                            td.textContent = `#${index+1}`;
+
+                            tr.appendChild(td);
+
+                            data.applicants.vector.forEach((skill)=>{
+                                const td = document.createElement('td');
+                                td.textContent = skill; // 1 или 0 в зависимости от наличия навыка
+                                tr.appendChild(td);
+                            })
+                            tbody.appendChild(tr);
+                        }
+                    })
+
+                    table.appendChild(tbody);
+                    content.innerHTML = '';
+                    content.appendChild(table);
+
+
+
+
+                })
+            });
+
+            // загружаем начальные параметры
             document.getElementById('sendData').addEventListener('click', function(){
+
+                const tableContainer = document.getElementById('result');
+                document.getElementById('startAlgoritm').setAttribute('disabled','');
+                tableContainer.innerHTML = 'load data ...';
+                if (window.myChart instanceof Chart) {
+                        window.myChart.destroy();
+                }
 
                 // Создаем объект FormData и добавляем в него данные формы
                 var formData = new FormData();
                 formData.append('datafile', document.getElementById('datafile').files[0]);
                 formData.append('tMax', document.getElementById('tMax').value);
+                formData.append('mu', document.getElementById('mu').value);
+                formData.append('lam', document.getElementById('lam').value);
+                formData.append('mut_level_0', document.getElementById('mut_level_0').value);
+                formData.append('P_cross', document.getElementById('P_cross').value);
+                formData.append('shtraf', document.getElementById('shtraf').value);
+               
 
+                console.log('KLICK BTN');
                 // Выполняем Fetch запрос для отправки данных формы методом POST
                 fetch('/upload', {
                     method: 'POST',
@@ -60,7 +203,65 @@
                 .then(data => {
                     console.log('Success:', data);
                     // обновляем часть страницы данными, полученными от сервера
-                    document.getElementById('result').innerHTML = JSON.stringify(data.applicantsData);
+                    // document.getElementById('result2').innerHTML = JSON.stringify(data.applicantsData);
+
+                    const matrixSkills = data.matrix;
+                    const numberSkills = data.numberSkills;
+                    const numberApplicants = data.numberApplicants;
+
+                    
+                    tableContainer.innerHTML = '';
+
+                    // Создаем элемент таблицы
+                    const table = document.createElement('table');
+                    table.classList.add('table'); // Добавляем классы Bootstrap, если используете
+
+                    // Создаем заголовки для таблицы, если нужно
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+
+                    const th = document.createElement('th');
+                    th.textContent = `Applicant`;
+                    headerRow.appendChild(th);
+                    for (let i = 0; i < numberSkills; i++) {
+                    const th = document.createElement('th');
+                    th.textContent = `Skill ${i + 1}`; // Название навыков
+                    headerRow.appendChild(th);
+                    }
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    // Создаем тело таблицы
+                    const tbody = document.createElement('tbody');
+
+                    // Генерируем строки таблицы на основе matrixSkills
+                    matrixSkills.forEach((skillsRow, index) => {
+                    const tr = document.createElement('tr');
+
+                    const td = document.createElement('td');
+                    td.textContent = `#${index+1} Salary - ${data.salaryArray[index]}  
+                                            Number Skilss - ${data.applicantsData[index].numberSkills}
+                                            Skilss - ${data.applicantsData[index].skills}`; // 1 или 0 в зависимости от наличия навыка
+                    tr.appendChild(td);
+                    // Для каждого навыка в строке создаем ячейку
+                    skillsRow.forEach(skill => {
+                        const td = document.createElement('td');
+                        td.textContent = skill; // 1 или 0 в зависимости от наличия навыка
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                    });
+
+                    table.appendChild(tbody);
+
+                    // Очищаем контейнер таблицы и вставляем новую таблицу
+                    tableContainer.innerHTML = '';
+                    tableContainer.appendChild(table);
+
+                    // включаем кнопку старта
+                    document.getElementById('startAlgoritm').removeAttribute('disabled');
+
+
                 })
                 .catch((error) => {
                     console.error('Error:', error);
